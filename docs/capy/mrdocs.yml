@@ -1,8 +1,8 @@
 # Input
-source-root: ..
+source-root: ../../upstream-rts
 # Directories that contain documented source files
 input:
-  - ../include
+  - ../../upstream-rts/include
 # Patterns to filter out the source-files in the directories
 file-patterns:
   - '*.hpp'
@@ -18,12 +18,12 @@ inaccessible-bases: never
 
 # Generator
 generate: adoc
-base-url: https://www.github.com/cppalliance/rts/blob/develop/
+base-url: https://github.com/sentientsergio/boost-docs/blob/main/upstream-rts/
 
 # Style
 verbose: true
 multipage: true
-# use-system-libc: true
-# use-system-stdlib: true
+
+compile-commands: ../../upstream-rts/build/compile_commands.json
 
 cmake: '-DCMAKE_CXX_STANDARD=20 -DBOOST_RTS_MRDOCS_BUILD=ON -DBOOST_RTS_BUILD_TESTS=OFF -DBOOST_RTS_BUILD_EXAMPLES=OFF'
