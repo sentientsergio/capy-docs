@@ -17,9 +17,3 @@ asciidoc:
     table-caption: false
 nav:
   - modules/ROOT/nav.adoc
-ext:
-  cpp-reference:
-    config: docs/capy/mrdocs.yml
-  cpp-tagfiles:
-    using-namespaces:
-      - boost::rts
