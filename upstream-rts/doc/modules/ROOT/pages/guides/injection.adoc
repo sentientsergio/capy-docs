@@ -1,0 +1,57 @@
+[[guide-injection]]
+= Guide: Inject dependencies with `invoke`
+
+`boost::rts::invoke` calls a callable and supplies stored services as arguments. This is useful for wiring dependencies without manual lookups.
+
+== Basic injection
+
+```cpp
+#include <boost/rts/polystore.hpp>
+
+struct logger { };
+struct metrics { };
+
+int main() {
+    boost::rts::polystore ps;
+    ps.emplace<logger>();
+    ps.emplace<metrics>();
+
+    ps.invoke([](logger& log, metrics& m) {
+        // use log and m
+    });
+}
+```
+
+Rules:
+
+* For each argument type, `invoke` looks up the stored object of that type (or keyed type).
+* If any required argument is missing, `std::bad_typeid` is thrown.
+* Arguments can be pointers; if the type is missing, `nullptr` is passed for pointer arguments.
+
+== With `key_type`
+
+```cpp
+struct service_base { virtual ~service_base() = default; };
+struct logger : service_base { using key_type = service_base; };
+
+boost::rts::polystore ps;
+ps.emplace<logger>();
+
+ps.invoke([](service_base& svc) {
+    // receives logger via its key_type alias
+});
+```
+
+== Mixing required and optional dependencies
+
+```cpp
+struct cache { };
+
+ps.invoke([](logger& log, cache* maybe_cache) {
+    // log must exist; maybe_cache is nullptr if cache is not stored
+});
+```
+
+== Lifecycle interaction
+
+When using `boost::rts::application`, `invoke` can be used before or after `start`, but you must ensure the services you depend on have been constructed. `start`/`stop` do not change stored object identity; they only call hooks on types that define `start()`/`stop()`.

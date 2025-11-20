@@ -1,0 +1,95 @@
+[[guide-register]]
+= Guide: Register and access services
+
+This guide shows how to store services in a `polystore` (or `application`), retrieve them, and control aliases with `key_type`.
+
+== Basic registration
+
+```cpp
+#include <boost/rts/application.hpp>
+
+struct logger { void start() {} void stop() {} };
+struct metrics { };
+
+int main() {
+    boost::rts::application app;
+
+    auto& log = app.emplace<logger>();      // construct in place
+    auto& m = app.insert(metrics{});        // move/copy insert
+
+    logger& again = app.get<logger>();      // same instance
+    metrics* maybe = app.find<metrics>();   // nullptr if absent
+
+    app.start();
+    app.stop();
+}
+```
+
+Error surfaces:
+
+* `get<T>` throws `std::bad_typeid` if `T` is missing.
+* Duplicate insertions throw `std::invalid_argument`.
+* `const` member functions are thread-safe; mutation is not concurrent-safe.
+
+== `key_type` aliases
+
+Use `key_type` to register by an interface/base key.
+
+```cpp
+struct service_base { virtual ~service_base() = default; };
+
+struct logger : service_base {
+    using key_type = service_base; // stored and looked up by service_base
+    void start() {}
+    void stop() {}
+};
+
+int main() {
+    boost::rts::polystore ps;
+    auto& log = ps.emplace<logger>();
+
+    service_base& iface = ps.get<service_base>(); // refers to logger
+    // ps.get<logger>() also works
+}
+```
+
+Rules:
+
+* If `T` has `key_type`, you cannot pass additional key types.
+* `T&` must be convertible to `key_type&`.
+* Duplicate alias insertion throws `std::invalid_argument`.
+
+== Multiple keys without `key_type`
+
+```cpp
+struct cache { };
+struct cache_handle { };
+
+int main() {
+    boost::rts::polystore ps;
+    auto& c = ps.emplace<cache, cache_handle>();
+    cache_handle& alias = ps.get<cache_handle>(); // same object
+}
+```
+
+Rules:
+
+* `T&` must be convertible to each key type.
+* Duplicate key conflicts throw `std::invalid_argument`.
+
+== Reuse or create with `use`/`try_emplace`
+
+```cpp
+boost::rts::polystore ps;
+
+struct config { int value = 42; };
+
+config& c1 = ps.use<config>();           // default-construct if missing
+config& c2 = ps.try_emplace<config>(7);  // return existing or emplace
+```
+
+Constraints: `use<T>` requires `T` to be default-constructible. `try_emplace` only inserts if missing; otherwise returns the existing object.
+
+== Teardown order
+
+All stored objects are destroyed when the container is destroyed, in reverse creation order. This is deterministic and helps avoid use-after-free in dependent services.

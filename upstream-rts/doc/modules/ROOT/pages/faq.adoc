@@ -1,0 +1,22 @@
+[[faq]]
+= Troubleshooting and FAQ
+
+== I get `std::bad_typeid`
+
+`get<T>` or `invoke` could not find the requested type (or alias). Ensure the service was inserted and that you are using the same type or `key_type` alias.
+
+== I get `std::invalid_argument` on insert
+
+You attempted to insert a duplicate type or alias. Check existing keys and avoid calling `emplace` twice for the same type/key combination. Use `try_emplace` or `use` if you want “insert if missing.”
+
+== Can I call `start` twice?
+
+No. `application::start` is single-shot. `stop` is idempotent and safe to call multiple times (and concurrently).
+
+== Thread safety rules in one line
+
+Const member calls are thread-safe; mutating operations are not. `stop` is thread-safe; `start` is not reentrant.
+
+== What about no exceptions / no RTTI?
+
+The library is designed to work without exceptions and RTTI. When exceptions are off, avoid depending on throws from constructors or error paths; prefer error-code APIs where available.

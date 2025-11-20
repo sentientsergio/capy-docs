@@ -1,0 +1,44 @@
+[[concepts]]
+= Concepts and behaviors
+
+This page summarizes the core behaviors of Capy/RTS so you can reason about lifetimes, threading, and errors.
+
+== Two-phase initialization
+
+* Construct services via `polystore::emplace`/`insert`/`use`/`try_emplace`.
+* `application::start` calls `start()` on each stored service that defines it, in creation order. Only one `start` call is allowed.
+* `application::stop` calls `stop()` on each stored service that defines it, in reverse creation order. It is idempotent and may be called concurrently.
+* Destruction: stored services are destroyed when the container is destroyed, in reverse creation order.
+
+== Lookup model
+
+* Primary key is the exact type. If a type declares `key_type`, that alias is also registered.
+* Additional aliases can be provided as template parameters to `emplace<T, Keys...>`. `T&` must be convertible to each `Keys&`.
+* `find<T>()` returns a pointer or `nullptr`. `get<T>()` throws `std::bad_typeid` if missing.
+
+== Error model
+
+* Missing type: `get<T>`/`invoke` throw `std::bad_typeid`.
+* Duplicate insertion (type or keys already present): `std::invalid_argument`.
+* Constructors and user code may throw; operations provide strong exception safety (no partial insert on failure).
+
+== Thread safety
+
+* `const` member functions (`find`, `get` on const, `get_elements`) are thread-safe.
+* Mutating operations (`emplace`, `insert`, `try_emplace`, `use`, `clear`) must not run concurrently on the same object.
+* `application::stop` is thread-safe and may be called concurrently; `start` is single-shot.
+
+== Template constraints
+
+* `use<T>` requires `T` to be default-constructible.
+* When `key_type` is present on `T`, additional key types cannot be supplied, and `T&` must be convertible to `key_type&`.
+* For `emplace<T, Keys...>`, `T&` must be convertible to each `Keys&`.
+
+== RTTI and exceptions
+
+* Can be built without exceptions (`-fno-exceptions`) and without RTTI (`-fno-rtti`); error reporting uses `std::bad_typeid`/`std::invalid_argument` when exceptions are enabled.
+* When exceptions are disabled, use error-code paths where available; avoid relying on throws from user constructors.
+
+== Compression helpers
+
+If built with Brotli/Zlib enabled, the `boost::rts::brotli` and `boost::rts::zlib` namespaces expose streaming encode/decode helpers. Integrate them as services if you need shared configuration or dictionaries.

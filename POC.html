@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Boost.Capy (RTS) Documentation POC</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, sans-serif; margin: 2rem auto; max-width: 900px; line-height: 1.5; color: #111; }
+    nav a { margin-right: 1rem; }
+    pre { background: #f7f7f7; padding: 0.75rem; overflow: auto; border-radius: 6px; }
+    code { font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace; }
+    h1, h2, h3 { margin-top: 1.8rem; }
+    .note { background: #eef6ff; border-left: 4px solid #4a90e2; padding: 0.75rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Boost.Capy (Boost.RunTimeServices) Documentation POC</h1>
+    <nav>
+      <a href="#overview">Overview</a>
+      <a href="#quickstart">Quickstart</a>
+      <a href="#register">Guide: Register services</a>
+      <a href="#inject">Guide: Inject</a>
+      <a href="#concepts">Concepts</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <p class="note">This HTML is a lightweight preview of the new docs; source AsciiDoc lives in <code>upstream-rts/doc/modules/ROOT/pages</code>.</p>
+  </header>
+
+  <section id="overview">
+    <h2>Overview</h2>
+    <p>Boost.RunTimeServices (to be renamed Boost.Capy) is a small C++11 library for collecting optional runtime services, starting them in order, and stopping them safely. It works with or without exceptions/RTTI and keeps compile time low.</p>
+    <ul>
+      <li>Type-based registry (<code>boost::rts::polystore</code>) with optional aliasing via <code>key_type</code>.</li>
+      <li>Two-phase lifecycle (<code>start</code>/<code>stop</code>) via <code>boost::rts::application</code>.</li>
+      <li>Dependency injection helper (<code>boost::rts::invoke</code>).</li>
+      <li>Compression helpers (brotli/zlib) when enabled.</li>
+    </ul>
+    <p><strong>Start here:</strong> <a href="#quickstart">Quickstart</a> → <a href="#register">Register services</a> → <a href="#inject">Inject dependencies</a> → <a href="#concepts">Concepts</a> → <a href="#faq">FAQ</a>.</p>
+  </section>
+
+  <section id="quickstart">
+    <h2>Quickstart</h2>
+    <h3>Minimal service and lifecycle</h3>
+<pre><code>#include &lt;boost/rts/application.hpp&gt;
+
+struct logger {
+    void start() {} // optional
+    void stop() {}  // optional
+};
+
+int main() {
+    boost::rts::application app;
+    auto& log = app.emplace&lt;logger&gt;(); // stored until app destruction
+    app.start(); // calls logger::start if present; only call once
+    // ... use log ...
+    app.stop();  // idempotent; reverse creation order; thread-safe
+    app.join();  // waits until stop completes
+}</code></pre>
+    <h3>Build and link (CMake)</h3>
+<pre><code>find_package(Boost 1.86 COMPONENTS rts REQUIRED)
+add_executable(capy_hello main.cpp)
+target_link_libraries(capy_hello PRIVATE Boost::rts)
+set_target_properties(capy_hello PROPERTIES CXX_STANDARD 11)</code></pre>
+    <ul>
+      <li>Objects live until the container is destroyed; destruction is reverse creation order.</li>
+      <li><code>start</code> is single-shot; <code>stop</code> is idempotent and thread-safe.</li>
+      <li>Const member calls are thread-safe; mutation is not concurrent-safe.</li>
+    </ul>
+  </section>
+
+  <section id="register">
+    <h2>Guide: Register and access services</h2>
+<pre><code>#include &lt;boost/rts/application.hpp&gt;
+
+struct logger { void start() {} void stop() {} };
+struct metrics { };
+
+int main() {
+    boost::rts::application app;
+    auto& log = app.emplace&lt;logger&gt;();      // construct in place
+    auto& m = app.insert(metrics{});        // move/copy insert
+
+    logger& again = app.get&lt;logger&gt;();      // same instance
+    metrics* maybe = app.find&lt;metrics&gt;();   // nullptr if absent
+
+    app.start();
+    app.stop();
+}</code></pre>
+    <p><strong>Error surfaces:</strong> <code>get&lt;T&gt;</code> throws <code>std::bad_typeid</code> if missing; duplicates throw <code>std::invalid_argument</code>; const access is thread-safe, mutation is not.</p>
+    <h3><code>key_type</code> alias</h3>
+<pre><code>struct service_base { virtual ~service_base() = default; };
+struct logger : service_base {
+    using key_type = service_base;
+    void start() {}
+    void stop() {}
+};
+
+boost::rts::polystore ps;
+auto& log = ps.emplace&lt;logger&gt;();
+service_base& iface = ps.get&lt;service_base&gt;(); // refers to logger
+</code></pre>
+    <h3>Multiple keys without <code>key_type</code></h3>
+<pre><code>struct cache { };
+struct cache_handle { };
+
+boost::rts::polystore ps;
+auto& c = ps.emplace&lt;cache, cache_handle&gt;();
+cache_handle& alias = ps.get&lt;cache_handle&gt;(); // same object
+</code></pre>
+    <h3>Reuse or create</h3>
+<pre><code>struct config { int value = 42; };
+boost::rts::polystore ps;
+config& c1 = ps.use&lt;config&gt;();          // default-construct if missing
+config& c2 = ps.try_emplace&lt;config&gt;(7);  // return existing or emplace
+</code></pre>
+    <p>Teardown: all services are destroyed in reverse creation order when the container is destroyed.</p>
+  </section>
+
+  <section id="inject">
+    <h2>Guide: Inject dependencies with <code>invoke</code></h2>
+<pre><code>#include &lt;boost/rts/polystore.hpp&gt;
+
+struct logger { };
+struct metrics { };
+
+boost::rts::polystore ps;
+ps.emplace&lt;logger&gt;();
+ps.emplace&lt;metrics&gt;();
+
+ps.invoke([](logger& log, metrics& m) {
+    // use log and m
+});
+</code></pre>
+    <p><strong>Rules:</strong> each argument type must be stored; missing required types throw <code>std::bad_typeid</code>. Pointer arguments receive <code>nullptr</code> if missing.</p>
+<pre><code>struct service_base { virtual ~service_base() = default; };
+struct logger : service_base { using key_type = service_base; };
+ps.emplace&lt;logger&gt;();
+ps.invoke([](service_base& svc) {
+    // receives logger via key_type alias
+});
+</code></pre>
+  </section>
+
+  <section id="concepts">
+    <h2>Concepts and behaviors</h2>
+    <ul>
+      <li><strong>Two-phase init:</strong> construct via insert/emplace; <code>start</code> calls <code>start()</code> in creation order (once); <code>stop</code> calls <code>stop()</code> in reverse order (idempotent, thread-safe); destruction is reverse order.</li>
+      <li><strong>Lookup:</strong> primary key is type; <code>key_type</code> adds an alias; additional keys via <code>emplace&lt;T, Keys...&gt;</code>.</li>
+      <li><strong>Error model:</strong> missing type → <code>std::bad_typeid</code>; duplicate insert → <code>std::invalid_argument</code>; strong exception safety on insert.</li>
+      <li><strong>Thread safety:</strong> const member calls are thread-safe; mutation is not; <code>stop</code> is concurrent-safe; <code>start</code> is single-shot.</li>
+      <li><strong>Template constraints:</strong> <code>use&lt;T&gt;</code> needs default-constructible <code>T</code>; <code>key_type</code> forbids extra keys; <code>T&</code> must be convertible to each key type.</li>
+      <li><strong>RTTI/exceptions:</strong> works without both; when exceptions are off, avoid depending on throws.</li>
+    </ul>
+  </section>
+
+  <section id="faq">
+    <h2>Troubleshooting and FAQ</h2>
+    <ul>
+      <li><strong><code>std::bad_typeid</code>:</strong> requested type/alias not stored.</li>
+      <li><strong><code>std::invalid_argument</code> on insert:</strong> duplicate type or alias; use <code>try_emplace</code>/<code>use</code> if “insert if missing.”</li>
+      <li><strong>Call start twice?</strong> No. <code>start</code> is single-shot. <code>stop</code> is idempotent and thread-safe.</li>
+      <li><strong>Thread safety recap:</strong> const calls are thread-safe; mutation is not. <code>stop</code> is concurrent-safe; <code>start</code> is not reentrant.</li>
+      <li><strong>No exceptions/RTTI?</strong> Supported. Prefer error-code paths where available; don’t rely on throws in constructors.</li>
+    </ul>
+  </section>
+</body>
+</html>

@@ -1,0 +1,33 @@
+//
+// Copyright (c) 2023 Vinnie Falco (vinnie.falco@gmail.com)
+// Copyright (c) 2024 Mohammad Nejati
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+// Official repository: https://github.com/cppalliance/rts
+//
+
+= Boost.RunTimeServices
+
+Boost.RunTimeServices (to be renamed Boost.Capy) is a small C++11 library for collecting optional runtime services, starting them in order, and stopping them safely. It is friendly to embedded targets (optional exceptions/RTTI) and aims to keep compile times low.
+
+What it provides:
+
+* Type-based service registry (`boost::rts::polystore`) with optional aliasing via `key_type`.
+* Two-phase lifecycle management (`start`/`stop`) via `boost::rts::application`.
+* Dependency injection helper (`boost::rts::invoke`) to wire services into callables.
+* Compression helpers (brotli/zlib) when enabled.
+
+Why use it:
+
+* Works with and without exceptions or RTTI.
+* Designed for small hosts: minimal templates, fast builds.
+* Deterministic teardown (reverse construction order).
+
+Next steps:
+
+* New to Capy? Start with the xref:quickstart.adoc[Quickstart].
+* Doing real work? See xref:guides/registering-services.adoc[Register and access services] and xref:guides/injection.adoc[Inject dependencies].
+* Need deeper behavior details? See xref:concepts.adoc[Concepts and behaviors].
+* API details live in the xref:reference:boost/rts.adoc[Reference].

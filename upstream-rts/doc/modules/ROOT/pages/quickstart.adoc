@@ -1,0 +1,54 @@
+[[quickstart]]
+= Quickstart
+
+Audience: developers new to Capy/RTS who want a minimal working example and the build steps.
+
+== Minimal service and lifecycle
+
+```cpp
+#include <boost/rts/application.hpp>
+
+struct logger {
+    void start() {} // optional
+    void stop() {}  // optional
+};
+
+int main() {
+    boost::rts::application app;
+
+    auto& log = app.emplace<logger>(); // stored until app destruction
+
+    app.start(); // calls logger::start if present; only call once
+    // ... use log ...
+    app.stop();  // idempotent; reverse creation order; thread-safe
+    app.join();  // waits until stop completes
+}
+```
+
+Notes:
+
+* Objects are destroyed when `application` is destroyed, in reverse creation order.
+* `start` may be called once; `stop` is safe to call multiple times and concurrently.
+* `const` member calls on `polystore` are thread-safe; mutation (emplace/insert) is not concurrent-safe.
+
+== Build and link (CMake)
+
+```cmake
+find_package(Boost 1.86 COMPONENTS rts REQUIRED)
+
+add_executable(capy_hello main.cpp)
+target_link_libraries(capy_hello PRIVATE Boost::rts)
+set_target_properties(capy_hello PROPERTIES CXX_STANDARD 11)
+```
+
+Compiler/feature notes:
+
+* Requires C++11.
+* Supports builds without exceptions and without RTTI.
+
+== Where next
+
+* Register and access more interesting services: xref:guides/registering-services.adoc[]. 
+* Inject stored services into callables: xref:guides/injection.adoc[]. 
+* Behavior and guarantees: xref:concepts.adoc[]. 
+* API reference: xref:reference:boost/rts.adoc[]. 
