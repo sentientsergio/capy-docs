@@ -7,9 +7,9 @@
 # Official repository: https://github.com/boostorg/url
 #
 
-name: rts
+name: capy
 version: ~
-title: Boost.RunTimeServices
+title: Boost.Capy
 start_page: index.adoc
 asciidoc:
   attributes:

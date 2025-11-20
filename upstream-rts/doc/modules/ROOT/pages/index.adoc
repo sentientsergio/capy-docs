@@ -10,7 +10,7 @@
 
 = Boost.RunTimeServices
 
-Boost.RunTimeServices (to be renamed Boost.Capy) is a small C++11 library for collecting optional runtime services, starting them in order, and stopping them safely. It is friendly to embedded targets (optional exceptions/RTTI) and aims to keep compile times low.
+Boost.Capy is a small C++11 library for collecting optional runtime services, starting them in order, and stopping them safely. It is friendly to embedded targets (optional exceptions/RTTI) and aims to keep compile times low.
 
 What it provides:
 

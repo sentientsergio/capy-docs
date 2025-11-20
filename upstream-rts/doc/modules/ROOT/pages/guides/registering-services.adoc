@@ -1,7 +1,7 @@
 [[guide-register]]
 = Guide: Register and access services
 
-This guide shows how to store services in a `polystore` (or `application`), retrieve them, and control aliases with `key_type`.
+This guide shows how to store services in a `polystore` (or `application`), retrieve them, and control aliases with `key_type` in Boost.Capy.
 
 == Basic registration
 

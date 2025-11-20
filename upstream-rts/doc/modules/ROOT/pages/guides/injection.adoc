@@ -1,7 +1,7 @@
 [[guide-injection]]
 = Guide: Inject dependencies with `invoke`
 
-`boost::rts::invoke` calls a callable and supplies stored services as arguments. This is useful for wiring dependencies without manual lookups.
+`boost::rts::invoke` calls a callable and supplies stored services as arguments. This is useful for wiring dependencies without manual lookups in Boost.Capy.
 
 == Basic injection
 

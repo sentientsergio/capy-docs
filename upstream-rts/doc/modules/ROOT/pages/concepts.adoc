@@ -1,7 +1,7 @@
 [[concepts]]
 = Concepts and behaviors
 
-This page summarizes the core behaviors of Capy/RTS so you can reason about lifetimes, threading, and errors.
+This page summarizes the core behaviors of Boost.Capy so you can reason about lifetimes, threading, and errors.
 
 == Two-phase initialization
 

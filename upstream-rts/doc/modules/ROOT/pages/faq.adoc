@@ -19,4 +19,4 @@ Const member calls are thread-safe; mutating operations are not. `stop` is threa
 
 == What about no exceptions / no RTTI?
 
-The library is designed to work without exceptions and RTTI. When exceptions are off, avoid depending on throws from constructors or error paths; prefer error-code APIs where available.
+Boost.Capy is designed to work without exceptions and RTTI. When exceptions are off, avoid depending on throws from constructors or error paths; prefer error-code APIs where available.

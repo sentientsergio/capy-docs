@@ -1,7 +1,7 @@
 [[quickstart]]
 = Quickstart
 
-Audience: developers new to Capy/RTS who want a minimal working example and the build steps.
+Audience: developers new to Boost.Capy who want a minimal working example and the build steps.
 
 == Minimal service and lifecycle
 
