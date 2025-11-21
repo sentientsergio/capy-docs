@@ -10,16 +10,15 @@ Routes are evaluated in registration order. Handlers are declarative: they descr
 ```cpp
 #include <boost/beast2/server/http_server.hpp>
 #include <boost/beast2/server/router.hpp>
-#include <boost/http_proto/response.hpp>
-
-using boost::beast2::router;
-using boost::http_proto::response;
+#include <boost/http_proto/status.hpp>
 
 auto hello()
 {
     return [](auto& req, auto& res)
     {
-        return res.send("Hello, world");
+        res.status(boost::http_proto::status::ok);
+        res.set_body("Hello, world");
+        return res.send(); // tells the router to send the prepared response
     };
 }
 ```
@@ -34,11 +33,17 @@ auto require_auth()
     return [](auto& req, auto& res)
     {
         if (!credentials_valid(req))
-            return res.status(403).send("Invalid credentials");
+        {
+            res.status(boost::http_proto::status::forbidden);
+            res.set_body("Invalid credentials");
+            return res.send();
+        }
 
         return res.next(); // continue to the next handler
     };
 }
+
+// credentials_valid is your code: check headers/cookies/etc.
 ```
 
 Register in order:

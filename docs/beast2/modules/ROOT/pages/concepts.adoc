@@ -11,7 +11,7 @@ This page summarizes the design principles behind Beast2 and its Sans-I/O counte
 
 == Declarative handlers
 
-* Handlers describe responses (`res.send(...)`, `res.status(...)`, `res.next()`); they do not call socket writes.
+* Handlers describe responses (`res.status(...); res.set_body(...); return res.send();`, or `res.next()`); they do not call socket writes.
 * Middleware runs in registration order and can short-circuit or delegate.
 * Static file serving follows the same pattern: decide what to serve; the connector performs I/O.
 
