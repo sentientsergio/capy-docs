@@ -1,0 +1,46 @@
+[[guide-static]]
+= Serve static content
+
+Beast2 ships a static file middleware. It maps URL paths to a document root and adds HTTP features like etag and directory redirects.
+
+== Minimal usage
+
+```cpp
+srv.wwwroot.use("/", boost::beast2::serve_static(doc_root));
+```
+
+Requests under `/` are served from `doc_root`. Register other routes first if you want them to take precedence.
+
+== Options
+
+`serve_static::options` controls behavior:
+
+* `dotfiles`: `allow` / `deny` / `ignore` (default).
+* `accept_ranges`: enable byte-range requests.
+* `cache_control`: emit cache-control headers (default).
+* `etag`: emit etag headers (default).
+* `immutable`: add `immutable` directive when `max_age` is set.
+* `index`: serve `index.html` for directory requests (default).
+* `redirect`: add trailing slash redirects for directories (default).
+* `fallthrough`: treat client errors (e.g. missing file) as unhandled so later routes can run (default).
+
+Example with custom options:
+
+```cpp
+using boost::beast2::serve_static;
+
+serve_static::options opt;
+opt.dotfiles = serve_static::dotfiles_policy::deny;
+opt.cache_control = true;
+opt.etag = true;
+opt.immutable = true;
+opt.max_age_ms = 3600'000; // 1 hour
+
+srv.wwwroot.use("/", serve_static(doc_root, opt));
+```
+
+== Ordering
+
+* Middleware is evaluated in registration order.
+* Put `serve_static` after more specific API routes so APIs win.
+* If `fallthrough` is true (default), missing files keep walking the chain; if false, static middleware replies with errors.

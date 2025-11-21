@@ -1,0 +1,22 @@
+[[faq]]
+= FAQ and troubleshooting
+
+== Why split Sans-I/O (Http.Proto) from Beast2?
+
+To keep protocol logic reusable and testable without sockets. Http.Proto handles HTTP rules and routing; Beast2 moves bytes on sockets and manages timers/backpressure with Asio.
+
+== Can I use Beast2 without exceptions?
+
+Yes. Exceptions are optional. When disabled, use the error-code-returning overloads and return explicit HTTP status codes from handlers.
+
+== Where are the API reference pages?
+
+Reference generation is temporarily disabled in this build. Once tagfiles/MrDocs are available in the build environment, it will be re-enabled and linked from nav.
+
+== Static file 404s fall through—why?
+
+By default `serve_static` uses `fallthrough = true`, so missing files keep walking the route chain. Set `fallthrough = false` to have static middleware reply directly to missing files.
+
+== How do I shut the server down?
+
+`app.stop()` (Capy) will stop services; if you need an external signal handler, post a stop request to the application’s I/O context and let `srv.attach()` return.

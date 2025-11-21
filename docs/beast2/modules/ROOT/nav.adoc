@@ -1,1 +1,7 @@
 * xref:index.adoc[Overview]
+* xref:quickstart.adoc[Quickstart]
+* Guides
+** xref:guides/http-server.adoc[Build an HTTP server]
+** xref:guides/static-content.adoc[Serve static content]
+* xref:concepts.adoc[Concepts and design]
+* xref:faq.adoc[FAQ and troubleshooting]

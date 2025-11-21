@@ -1,0 +1,67 @@
+[[guide-http-server]]
+= Build an HTTP server
+
+This guide shows how to register routes and middleware with the Beast2 router and run a server.
+
+== Register routes
+
+Routes are evaluated in registration order. Handlers are declarative: they describe what to send, not how to write bytes.
+
+```cpp
+#include <boost/beast2/server/http_server.hpp>
+#include <boost/beast2/server/router.hpp>
+#include <boost/http_proto/response.hpp>
+
+using boost::beast2::router;
+using boost::http_proto::response;
+
+auto hello()
+{
+    return [](auto& req, auto& res)
+    {
+        return res.send("Hello, world");
+    };
+}
+```
+
+== Middleware
+
+Middleware can short-circuit with a response or forward to the next handler:
+
+```cpp
+auto require_auth()
+{
+    return [](auto& req, auto& res)
+    {
+        if (!credentials_valid(req))
+            return res.status(403).send("Invalid credentials");
+
+        return res.next(); // continue to the next handler
+    };
+}
+```
+
+Register in order:
+
+```cpp
+srv.wwwroot.use(require_auth());
+srv.wwwroot.add(boost::http_proto::verb::get, "/hello", hello());
+```
+
+== Start the server
+
+```cpp
+boost::rts::application app;
+auto& srv = boost::beast2::install_plain_http_server(app, "0.0.0.0", 8080, 4);
+srv.wwwroot.use(require_auth());
+srv.wwwroot.add(boost::http_proto::verb::get, "/hello", hello());
+app.start();
+srv.attach();
+```
+
+== Threading and lifetimes
+
+* `app.start()` launches worker threads; call it once.
+* `srv.attach()` blocks until the server stops; run it on a thread you can dedicate.
+* Request/response objects are per-request; avoid storing them beyond the handler.
+* Keep shared resources (pools, configs) in your Capy app or your own services and pass them into handlers.

@@ -1,0 +1,38 @@
+[[concepts]]
+= Concepts and design
+
+This page summarizes the design principles behind Beast2 and its Sans-I/O counterparts.
+
+== Sans-I/O split
+
+* Boost.Http.Proto and Boost.Websocket.Proto own HTTP/WebSocket protocol logic (parsers, serializers, router, middleware).
+* Beast2 owns networking: sockets, timers, backpressure, and driving the proto state machines with Asio.
+* Keeping protocol and transport separated makes the proto layer portable (TCP today, other transports tomorrow) and easily testable without sockets.
+
+== Declarative handlers
+
+* Handlers describe responses (`res.send(...)`, `res.status(...)`, `res.next()`); they do not call socket writes.
+* Middleware runs in registration order and can short-circuit or delegate.
+* Static file serving follows the same pattern: decide what to serve; the connector performs I/O.
+
+== Lifetimes and state
+
+* Request/response objects are per-request.
+* Keep shared resources in services you own (Capy app or your own singletons) and inject them into handlers; avoid hanging onto request-scoped objects.
+* Separate protocol state (messages, metadata) from transport state (sockets, TLS).
+
+== Dependency graph
+
+* Libraries are split to keep dependencies acyclic (Capy, Buffers, Http.Proto, Ws.Proto, Beast2).
+* Protocol layers do not depend on Beast2; Beast2 depends on them.
+* This keeps changes localized and narrows transitive exposure.
+
+== Error model
+
+* Exceptions are optional; APIs throw when enabled and rely on error codes otherwise.
+* Design for predictable failure handling: validate early, prefer explicit status codes in handlers.
+
+== Testing posture
+
+* Sans-I/O pieces are testable as pure functions over buffers and messages (no sockets required).
+* Connector behavior (timeouts, backpressure, TLS) is exercised through integration tests on Beast2.

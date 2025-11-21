@@ -1,0 +1,63 @@
+[[quickstart]]
+= Quickstart
+
+Audience: developers who want a minimal Beast2 HTTP server using the router and static file helper.
+
+== Minimal HTTP server
+
+```cpp
+#include <boost/beast2/server/http_server.hpp>
+#include <boost/beast2/server/serve_static.hpp>
+#include <boost/rts/application.hpp>
+#include <cstdlib>
+
+int main(int argc, char* argv[])
+{
+    if (argc != 5)
+    {
+        std::cerr << "Usage: " << argv[0]
+                  << " <address> <port> <doc_root> <num_workers>\n";
+        return EXIT_FAILURE;
+    }
+
+    boost::rts::application app;
+
+    auto& srv = boost::beast2::install_plain_http_server(
+        app,
+        argv[1],
+        static_cast<unsigned short>(std::atoi(argv[2])),
+        std::atoi(argv[4]));
+
+    srv.wwwroot.use("/", boost::beast2::serve_static(argv[3]));
+
+    app.start();   // start services and worker threads
+    srv.attach();  // join the I/O threads; blocks until stopped
+}
+```
+
+Notes:
+
+* `install_plain_http_server` wires an Asio TCP listener and the Http.Proto router into your Capy application.
+* `serve_static` is middleware: it decides what to serve; the connector handles the actual file I/O and writes.
+* `app.start()` must be called once; `srv.attach()` blocks the calling thread until shutdown.
+
+== Build and link (CMake)
+
+```cmake
+find_package(Boost REQUIRED COMPONENTS beast2 rts)
+
+add_executable(beast2_hello main.cpp)
+target_link_libraries(beast2_hello PRIVATE Boost::beast2 Boost::rts)
+set_target_properties(beast2_hello PROPERTIES CXX_STANDARD 11)
+```
+
+Compiler/feature notes:
+
+* Requires C++11.
+* Supports builds without exceptions; APIs throw when enabled and use error codes otherwise.
+
+== Where next
+
+* Add routes and middleware: xref:guides/http-server.adoc[].
+* Serve files with options (etag, redirects, cache headers): xref:guides/static-content.adoc[].
+* Understand the design split (Sans-I/O vs connector): xref:concepts.adoc[].
