@@ -12,11 +12,15 @@
 
 Boost.Beast2 packages an HTTP/1 networking stack on top of Boost.Asio and the Sans-I/O protocol libraries Boost.Http.Proto and Boost.Websocket.Proto. It is the socket-and-timers half of the design; the protocol and router logic lives in the Proto libraries. Beast2 is one of a small set of libraries that are intended to be used together:
 
-* Boost.Capy — application framework components.
-* Boost.Buffers — buffer abstractions and utilities.
-* Boost.Http.Proto — Sans-I/O HTTP protocol.
-* Boost.Websocket.Proto — Sans-I/O WebSocket protocol.
-* Boost.Beast2 — Asio-based connector that moves bytes for the proto layers.
+Boost.Beast2 enables users to write high level clients and servers that communicate on networks using the HTTP/1 and WebSocket protocols. In practice, Beast2 uses Boost.Asio and this bundle of related Boost libraries which must be used together: Boost.Capy, Boost.Buffers, Boost.Http.Proto, and Boost.Websocket.Proto.
+
+Each of these libraries addresses specific areas of development:
+Boost.Capy — application framework components
+Boost.Buffers — buffer abstractions and utilities
+Boost.Http.Proto — HTTP protocol implementation (Sans-I/O)
+Boost.Websocket.Proto — WebSocket protocol implementation (Sans-I/O)
+
+Separating these components into distinct libraries improves modularity, testability, and reuse.
 
 Separating the pieces keeps dependencies acyclic, improves testability, and lets protocol code be reused across transports.
 
@@ -30,7 +34,7 @@ Separating the pieces keeps dependencies acyclic, improves testability, and lets
 == Requirements
 
 * C++11 or later.
-* Boost (headers + Asio + system/throw_exception/assert).
+* Boost (headers, Asio, system, throw_exception, assert).
 * Works with `-fno-exceptions`; exceptions are optional.
 * Link to Beast2 statically or dynamically; enable Brotli/Zlib if you want the optional codecs.
 
